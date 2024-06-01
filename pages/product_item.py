@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 @st.cache()
 def load_data(path):
-    data = pd.read_json('data/output_data_item.jsonl', lines=True)
+    data = pd.read_json('data/output_data_item.jsonl', lines=True, orient='records')
     data['average_rating'] = pd.to_numeric(data['average_rating'], errors='coerce')
     data['rating_number'] = pd.to_numeric(data['rating_number'], errors='coerce')
     data['main_category'] = data['main_category'].astype(str)
