@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+import json
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -13,18 +13,12 @@ def load_css(css_file):
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 def load_data(path):
-    data = pd.read_csv(path, parse_dates=['datePostedString', 'dateSoldString'])
-    # Multiply 'lotAreaValue' by 43560 where 'lotAreaUnits' is 'Acres'
-    data.loc[data['lotAreaUnits'] == 'Acres', 'lotAreaValue'] = data.loc[data['lotAreaUnits'] == 'Acres', 'lotAreaValue'] * 43560
-    data['zipcode'] = data['zipcode'].astype(str)
-    data['lot_area_group'] = pd.cut(data['lotAreaValue'], bins=[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, np.inf], labels=[
-        '0-1000', '1000-2000', '2000-3000', '3000-4000', '4000-5000', '5000-6000', '6000-7000', '7000-8000', '8000-9000', '9000+'])
-    data['living_area_group'] = pd.cut(data['livingAreaValue'], bins=[0, 1000, 2000, 3000, 4000, np.inf], labels=[
-        '0-1000', '1000-2000', '2000-3000', '3000-4000', '4000+'])
-    data['hoa_group'] = pd.cut(data['monthlyHoaFee'], bins=[0, 100, 200, 500, 1000, np.inf], labels=[
-        '0-100', '100-200', '200-500', '500-1000', '1000+'])
-    return data
-
+    with open(path, 'r') as file:
+        data = [json.loads(line) for line in file]
+    df = pd.DataFrame(data)
+    return df
+    
+    
 def plot_line_chart(data, neighborhood, date_range):    
     # Create a year-month column for grouping
     data['year_month'] = data['dateSoldString'].dt.to_period('M')
@@ -146,7 +140,7 @@ def main():
     load_css("asset/style.css")
     
     # Load data
-    data = load_data("data/long_listing.csv")
+    data = load_data("data/output_data_user.jsonl")
 
     # Header
     st.markdown("""
@@ -165,68 +159,66 @@ def main():
     """, unsafe_allow_html=True)
 
     # Sidebar
-    st.sidebar.markdown("# Wayber Inc. 🏠")
-
     # Sidebar filters
-    st.sidebar.markdown("# Filters")
+    # st.sidebar.markdown("# Filters")
     
-    neighborhoods = ["All"] + sorted(data['subdivisionName'].dropna().unique().tolist())
-    selected_neighborhood = st.sidebar.selectbox("Select Neighborhood", neighborhoods)
+    # neighborhoods = ["All"] + sorted(data['subdivisionName'].dropna().unique().tolist())
+    # selected_neighborhood = st.sidebar.selectbox("Select Neighborhood", neighborhoods)
 
-    min_date = data['dateSoldString'].min().date()
-    max_date = data['dateSoldString'].max().date()
-    date_range = st.sidebar.slider("Select Date Range", min_date, max_date, (min_date, max_date))
+    # min_date = data['dateSoldString'].min().date()
+    # max_date = data['dateSoldString'].max().date()
+    # date_range = st.sidebar.slider("Select Date Range", min_date, max_date, (min_date, max_date))
 
-    # Filter the data based on the selected neighborhood and date range
-    if selected_neighborhood != "All":
-        data = data[data['subdivisionName'] == selected_neighborhood]
+    # # Filter the data based on the selected neighborhood and date range
+    # if selected_neighborhood != "All":
+    #     data = data[data['subdivisionName'] == selected_neighborhood]
 
-    start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-    data = data[(data['dateSoldString'] >= start_date) & (data['dateSoldString'] <= end_date)]
+    # start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+    # data = data[(data['dateSoldString'] >= start_date) & (data['dateSoldString'] <= end_date)]
 
-    # Plot charts
-    line_chart = plot_line_chart(data, selected_neighborhood, date_range)
-    year_built_chart = plot_vertical_bar_chart(data, 'yearBuilt', False)
-    garage_spaces_chart = plot_vertical_bar_chart(data, 'garageSpaces')
-    zipcode_chart = plot_top10_horizontal_bar_chart(data, 'zipcode')
-    hasview_chart = plot_donut_chart(data, 'hasView')
-    hometype_chart = plot_donut_chart(data, 'homeType')
-    condition_chart = plot_horizontal_bar_chart(data, 'propertyCondition')
-    sewer_chart = plot_horizontal_bar_chart(data, 'sewer')
-    lot_spaces_chart = plot_vertical_bar_chart(data, 'lot_area_group')
-    living_spaces_chart = plot_vertical_bar_chart(data, 'living_area_group')
-    bedroom_chart = plot_vertical_bar_chart(data, 'bedrooms')
-    bathroom_chart = plot_vertical_bar_chart(data, 'bathrooms')
-    hoa_chart = plot_vertical_bar_chart(data, 'hoa_group')
-    ele_school_chart = plot_donut_chart(data, 'elementarySchool')
-    mid_school_chart = plot_donut_chart(data, 'middleSchool')
-    high_school_chart = plot_donut_chart(data, 'highSchool')
+    # # Plot charts
+    # line_chart = plot_line_chart(data, selected_neighborhood, date_range)
+    # year_built_chart = plot_vertical_bar_chart(data, 'yearBuilt', False)
+    # garage_spaces_chart = plot_vertical_bar_chart(data, 'garageSpaces')
+    # zipcode_chart = plot_top10_horizontal_bar_chart(data, 'zipcode')
+    # hasview_chart = plot_donut_chart(data, 'hasView')
+    # hometype_chart = plot_donut_chart(data, 'homeType')
+    # condition_chart = plot_horizontal_bar_chart(data, 'propertyCondition')
+    # sewer_chart = plot_horizontal_bar_chart(data, 'sewer')
+    # lot_spaces_chart = plot_vertical_bar_chart(data, 'lot_area_group')
+    # living_spaces_chart = plot_vertical_bar_chart(data, 'living_area_group')
+    # bedroom_chart = plot_vertical_bar_chart(data, 'bedrooms')
+    # bathroom_chart = plot_vertical_bar_chart(data, 'bathrooms')
+    # hoa_chart = plot_vertical_bar_chart(data, 'hoa_group')
+    # ele_school_chart = plot_donut_chart(data, 'elementarySchool')
+    # mid_school_chart = plot_donut_chart(data, 'middleSchool')
+    # high_school_chart = plot_donut_chart(data, 'highSchool')
     
 
-    # Display charts in Streamlit
-    col1, col2 = st.columns(2)
-    with col1:
-        st.plotly_chart(line_chart, use_container_width=True)
-        st.plotly_chart(living_spaces_chart, use_container_width=True)
-        st.plotly_chart(year_built_chart, use_container_width=True)
-        st.plotly_chart(hometype_chart, use_container_width=True)
-        st.plotly_chart(bedroom_chart, use_container_width=True)
-        st.plotly_chart(condition_chart, use_container_width=True)
-        st.plotly_chart(hoa_chart, use_container_width=True)
-        st.plotly_chart(mid_school_chart, use_container_width=True)
+    # # Display charts in Streamlit
+    # st.plotly_chart(line_chart, use_container_width=True)
+    # st.plotly_chart(living_spaces_chart, use_container_width=True)
+    # st.plotly_chart(year_built_chart, use_container_width=True)
+    # st.plotly_chart(hometype_chart, use_container_width=True)
+    # st.plotly_chart(bedroom_chart, use_container_width=True)
+    # st.plotly_chart(condition_chart, use_container_width=True)
+    # st.plotly_chart(hoa_chart, use_container_width=True)
+    # st.plotly_chart(mid_school_chart, use_container_width=True)
 
         
-    with col2:
-        st.plotly_chart(zipcode_chart, use_container_width=True)
-        st.plotly_chart(lot_spaces_chart, use_container_width=True)
-        st.plotly_chart(garage_spaces_chart, use_container_width=True)
-        st.plotly_chart(hasview_chart, use_container_width=True)
-        st.plotly_chart(bathroom_chart, use_container_width=True)
-        st.plotly_chart(sewer_chart, use_container_width=True)
-        st.plotly_chart(ele_school_chart, use_container_width=True)
-        st.plotly_chart(high_school_chart, use_container_width=True)
+    # with col2:
+    #     st.plotly_chart(zipcode_chart, use_container_width=True)
+    #     st.plotly_chart(lot_spaces_chart, use_container_width=True)
+    #     st.plotly_chart(garage_spaces_chart, use_container_width=True)
+    #     st.plotly_chart(hasview_chart, use_container_width=True)
+    #     st.plotly_chart(bathroom_chart, use_container_width=True)
+    #     st.plotly_chart(sewer_chart, use_container_width=True)
+    #     st.plotly_chart(ele_school_chart, use_container_width=True)
+    #     st.plotly_chart(high_school_chart, use_container_width=True)
 
-        
+    
+
+
         
 
 
