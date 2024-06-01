@@ -1,234 +1,52 @@
-import pandas as pd
-import numpy as np
-import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
+import pandas as pd
+import json
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
-#######################################
-# PAGE SETUP
-#######################################
-def load_css(css_file):
-    """Load the CSS file"""
-    with open(css_file, "r") as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+# 读取JSONL文件
+def load_data(filepath):
+    data = []
+    with open(filepath, 'r', encoding='utf-8') as file:
+        for line in file:
+            data.append(json.loads(line))
+    return pd.DataFrame(data)
 
-def load_data(path):
-    data = pd.read_csv(path, parse_dates=['datePostedString', 'dateSoldString'])
-    # Multiply 'lotAreaValue' by 43560 where 'lotAreaUnits' is 'Acres'
-    data.loc[data['lotAreaUnits'] == 'Acres', 'lotAreaValue'] = data.loc[data['lotAreaUnits'] == 'Acres', 'lotAreaValue'] * 43560
-    data['zipcode'] = data['zipcode'].astype(str)
-    data['lot_area_group'] = pd.cut(data['lotAreaValue'], bins=[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, np.inf], labels=[
-        '0-1000', '1000-2000', '2000-3000', '3000-4000', '4000-5000', '5000-6000', '6000-7000', '7000-8000', '8000-9000', '9000+'])
-    data['living_area_group'] = pd.cut(data['livingAreaValue'], bins=[0, 1000, 2000, 3000, 4000, np.inf], labels=[
-        '0-1000', '1000-2000', '2000-3000', '3000-4000', '4000+'])
-    data['hoa_group'] = pd.cut(data['monthlyHoaFee'], bins=[0, 100, 200, 500, 1000, np.inf], labels=[
-        '0-100', '100-200', '200-500', '500-1000', '1000+'])
-    return data
+# 加载数据
+data_filepath = 'Amazon-Review-Analysis/data/All_Beauty.jsonl'
+df = load_data(data_filepath)
 
-def plot_line_chart(data, neighborhood, date_range):    
-    # Create a year-month column for grouping
-    data['year_month'] = data['dateSoldString'].dt.to_period('M')
-    
-    # Group by year-month and calculate the median sold price
-    grouped_data = data.groupby('year_month')['price'].median().reset_index()
-    grouped_data['year_month'] = grouped_data['year_month'].dt.to_timestamp()
+# 设置 Streamlit 页面标题
+st.title("Amazon Review Analysis")
 
-    # Plot the line chart
-    fig = px.line(grouped_data, x='year_month', y='price', title='Median Sold Price Over Time')
-    fig.update_layout(xaxis_title='Year-Month', yaxis_title='Median Sold Price', template='plotly_white')
+# 显示评分分布
+st.subheader("Review Ratings Distribution")
+rating_counts = df['rating'].value_counts().sort_index()
+st.bar_chart(rating_counts)
 
-    return fig
+# 显示 helpful_vote 数量分布(turns out非常不均匀)
+st.subheader("Helpful Vote Distribution")
+plt.figure(figsize=(10, 5))
+plt.hist(df['helpful_vote'], bins=30, color='skyblue', edgecolor='black')
+plt.xlabel('Helpful Votes')
+plt.ylabel('Number of Reviews')
+plt.title('Distribution of Helpful Votes')
+st.pyplot(plt)
 
-def plot_vertical_bar_chart(data, column, isTag=True):
-    # Filter out null values
-    data = data.dropna(subset=[column])
-    
-    # Group by the specified column and count occurrences
-    grouped_data = data[column].value_counts().reset_index()
-    grouped_data.columns = [column, 'count']
-    
-    # Sort the data in descending order
-    grouped_data = grouped_data.sort_values(by='count', ascending=False)
-    
-    # Plot the vertical bar chart
-    fig = px.bar(grouped_data, x=column, y='count', title=f'Total Count of {column.capitalize()}', text='count')
-    fig.update_layout(template='plotly_white')
+# 显示最有帮助的前10条评论
+st.subheader("Top 10 Reviews with Most Helpful Votes")
+top_10_helpful_reviews = df.nlargest(10, 'helpful_vote')[['user_id', 'rating', 'text', 'helpful_vote']]
+st.write(top_10_helpful_reviews)
 
-    # Conditionally set the textposition based on the isTag parameter
-    if isTag:
-        fig.update_traces(textposition='outside')
-    else:
-        fig.update_traces(textposition='none')
-    
-    # Explicitly set the category order for the x-axis
-    fig.update_layout(xaxis={'categoryorder':'total descending'})
-    
-    return fig
+# 显示评论内容的词云
+st.subheader("Word Cloud of Review Text")
+text = " ".join(review for review in df['text'])
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(text)
+plt.figure(figsize=(10, 5))
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis("off")
+st.pyplot(plt)
 
-
-def plot_horizontal_bar_chart(data, column, isTag=True):
-    # Filter out null values
-    data = data.dropna(subset=[column])
-
-    # Group by the specified column and count occurrences
-    grouped_data = data[column].value_counts().reset_index()
-    grouped_data.columns = [column, 'count']
-
-    # Plot the horizontal bar chart
-    fig = px.bar(grouped_data, x='count', y=column, orientation='h', title=f'{column.capitalize()} by Total Count')
-    fig.update_layout(xaxis_title='Total Count', yaxis_title=f'{column.capitalize()}', template='plotly_white')
-
-    # Conditionally set the textposition based on the isTag parameter
-    if isTag:
-        fig.update_traces(textposition='outside', text=grouped_data['count'])
-    else:
-        fig.update_traces(textposition='none')
-
-    # Explicitly set the category order for the y-axis to ensure descending order
-    fig.update_layout(yaxis={'categoryorder':'total ascending'})
-
-    return fig
-
-
-def plot_top10_horizontal_bar_chart(data, column, isTag=True):
-    # Filter out null values
-    data = data.dropna(subset=[column])
-
-    # Group by the specified column and count occurrences
-    grouped_data = data[column].value_counts().reset_index()
-    grouped_data.columns = [column, 'count']
-
-    # Sort by the total amount and select the top 10
-    top_10 = grouped_data.nlargest(10, 'count')
-
-    # Plot the horizontal bar chart
-    fig = px.bar(top_10, x='count', y=column, orientation='h', title=f'Top {len(top_10)} {column.capitalize()} by Total Count')
-    fig.update_layout(xaxis_title='Total Count', yaxis_title=f'{column.capitalize()}', template='plotly_white')
-
-    # Conditionally set the textposition based on the isTag parameter
-    if isTag:
-        fig.update_traces(textposition='outside', text=top_10['count'])
-    else:
-        fig.update_traces(textposition='none')
-
-    # Explicitly set the category order for the y-axis to ensure descending order
-    fig.update_layout(yaxis={'categoryorder':'total ascending'})
-
-    return fig
-
-
-
-def plot_donut_chart(data, column):
-    # Filter out null values
-    data = data.dropna(subset=column)
-    
-    # Group by hasView and count occurrences
-    grouped_data = data[column].value_counts().reset_index()
-    grouped_data.columns = [column, 'count']
-
-    # Plot the donut chart
-    fig = go.Figure(data=[go.Pie(labels=grouped_data[column], values=grouped_data['count'], hole=.3)])
-    fig.update_layout(title_text=f'Distribution of {column.capitalize()}')
-
-    return fig
-
-def main():
-    # Configure page settings
-    st.set_page_config(
-        page_title="Seattle Housing Market Dashboard",
-        page_icon="🏠",
-        layout="wide"
-    )
-
-    st.title("Seattle Housing Market: Sold House Analysis")
-
-    # Load the CSS file
-    load_css("asset/style.css")
-    
-    # Load data
-    data = load_data("data/long_listing.csv")
-
-    # Header
-    st.markdown("""
-        <div class="header-container">
-            <header class="header-text">Wayber@Seattle: proptotype dashboard for testing purpose</header>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Content
-    st.markdown("""
-        <div class="about-content-container">
-            <h1 class="title"> Seattle Properties Sold in the Past Year </h1>
-            <div class="summary">Welcome to our interactive visualization dashboard! This dynamic tool is designed to analyze the housing market in Seattle. 
-            This platform is built upon comprehensive property data, providing deep insights and trends in a wide range of real estate metrics.</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Sidebar
-    st.sidebar.markdown("# Wayber Inc. 🏠")
-
-    # Sidebar filters
-    st.sidebar.markdown("# Filters")
-    
-    neighborhoods = ["All"] + sorted(data['subdivisionName'].dropna().unique().tolist())
-    selected_neighborhood = st.sidebar.selectbox("Select Neighborhood", neighborhoods)
-
-    min_date = data['dateSoldString'].min().date()
-    max_date = data['dateSoldString'].max().date()
-    date_range = st.sidebar.slider("Select Date Range", min_date, max_date, (min_date, max_date))
-
-    # Filter the data based on the selected neighborhood and date range
-    if selected_neighborhood != "All":
-        data = data[data['subdivisionName'] == selected_neighborhood]
-
-    start_date, end_date = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-    data = data[(data['dateSoldString'] >= start_date) & (data['dateSoldString'] <= end_date)]
-
-    # Plot charts
-    line_chart = plot_line_chart(data, selected_neighborhood, date_range)
-    year_built_chart = plot_vertical_bar_chart(data, 'yearBuilt', False)
-    garage_spaces_chart = plot_vertical_bar_chart(data, 'garageSpaces')
-    zipcode_chart = plot_top10_horizontal_bar_chart(data, 'zipcode')
-    hasview_chart = plot_donut_chart(data, 'hasView')
-    hometype_chart = plot_donut_chart(data, 'homeType')
-    condition_chart = plot_horizontal_bar_chart(data, 'propertyCondition')
-    sewer_chart = plot_horizontal_bar_chart(data, 'sewer')
-    lot_spaces_chart = plot_vertical_bar_chart(data, 'lot_area_group')
-    living_spaces_chart = plot_vertical_bar_chart(data, 'living_area_group')
-    bedroom_chart = plot_vertical_bar_chart(data, 'bedrooms')
-    bathroom_chart = plot_vertical_bar_chart(data, 'bathrooms')
-    hoa_chart = plot_vertical_bar_chart(data, 'hoa_group')
-    ele_school_chart = plot_donut_chart(data, 'elementarySchool')
-    mid_school_chart = plot_donut_chart(data, 'middleSchool')
-    high_school_chart = plot_donut_chart(data, 'highSchool')
-    
-
-    # Display charts in Streamlit
-    col1, col2 = st.columns(2)
-    with col1:
-        st.plotly_chart(line_chart, use_container_width=True)
-        st.plotly_chart(living_spaces_chart, use_container_width=True)
-        st.plotly_chart(year_built_chart, use_container_width=True)
-        st.plotly_chart(hometype_chart, use_container_width=True)
-        st.plotly_chart(bedroom_chart, use_container_width=True)
-        st.plotly_chart(condition_chart, use_container_width=True)
-        st.plotly_chart(hoa_chart, use_container_width=True)
-        st.plotly_chart(mid_school_chart, use_container_width=True)
-
-        
-    with col2:
-        st.plotly_chart(zipcode_chart, use_container_width=True)
-        st.plotly_chart(lot_spaces_chart, use_container_width=True)
-        st.plotly_chart(garage_spaces_chart, use_container_width=True)
-        st.plotly_chart(hasview_chart, use_container_width=True)
-        st.plotly_chart(bathroom_chart, use_container_width=True)
-        st.plotly_chart(sewer_chart, use_container_width=True)
-        st.plotly_chart(ele_school_chart, use_container_width=True)
-        st.plotly_chart(high_school_chart, use_container_width=True)
-
-        
-        
-
-
+# 运行 Streamlit 应用
 if __name__ == "__main__":
-    main()
+    st.run()
