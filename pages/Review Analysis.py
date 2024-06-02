@@ -13,7 +13,7 @@ def load_data(filepath):
     return pd.DataFrame(data)
 
 # 加载数据
-data_filepath = 'Amazon-Review-Analysis/data/All_Beauty.jsonl'
+data_filepath = 'data/output_data_review.jsonl'
 df = load_data(data_filepath)
 
 # 设置 Streamlit 页面标题
@@ -27,7 +27,7 @@ st.bar_chart(rating_counts)
 # 显示 helpful_vote 数量分布(turns out非常不均匀)
 st.subheader("Helpful Vote Distribution")
 plt.figure(figsize=(10, 5))
-plt.hist(df['helpful_vote'], bins=30, color='skyblue', edgecolor='black')
+plt.hist(df['helpful_vote'], bins=100, color='skyblue', edgecolor='black')
 plt.xlabel('Helpful Votes')
 plt.ylabel('Number of Reviews')
 plt.title('Distribution of Helpful Votes')
@@ -47,6 +47,4 @@ plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis("off")
 st.pyplot(plt)
 
-# 运行 Streamlit 应用
-if __name__ == "__main__":
-    st.run()
+

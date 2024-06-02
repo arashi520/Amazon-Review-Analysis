@@ -129,12 +129,12 @@ def plot_donut_chart(data, column):
 def main():
     # Configure page settings
     st.set_page_config(
-        page_title="Seattle Housing Market Dashboard",
+        page_title="Amazon All Beauty Dashboard",
         page_icon="🏠",
         layout="wide"
     )
 
-    st.title("Seattle Housing Market: Sold House Analysis")
+    st.title("Amazon All Beauty Category Analysis: User Profile")
 
     # Load the CSS file
     load_css("asset/style.css")
@@ -149,14 +149,7 @@ def main():
         </div>
     """, unsafe_allow_html=True)
 
-    # Content
-    st.markdown("""
-        <div class="about-content-container">
-            <h1 class="title"> Seattle Properties Sold in the Past Year </h1>
-            <div class="summary">Welcome to our interactive visualization dashboard! This dynamic tool is designed to analyze the housing market in Seattle. 
-            This platform is built upon comprehensive property data, providing deep insights and trends in a wide range of real estate metrics.</div>
-        </div>
-    """, unsafe_allow_html=True)
+  
 
     # Sidebar
     # Sidebar filters
