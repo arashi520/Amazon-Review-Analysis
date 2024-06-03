@@ -96,7 +96,7 @@ def main():
    # Header
     st.markdown("""
         <div class="header-container">
-            <header class="header-text">IMT 563 Advanced Database Management System @ Amazon All Beauty Category Reviews 2023 Data Visualization</header>
+            <header class="header-text">IMT 563 @ Amazon All Beauty Category Reviews 2023 Data Visualization</header>
         </div>
     """, unsafe_allow_html=True)
 
@@ -106,11 +106,13 @@ def main():
     donut_chart = plot_donut_chart(merged_data, 'gender')
 
     st.plotly_chart(line_chart, use_container_width=True)
-    st.plotly_chart(donut_chart, use_container_width=True)
-    st.plotly_chart(bar_chart, use_container_width=True)
 
+    col1, col2 = st.columns(2)
+    with col1:
+        st.plotly_chart(donut_chart, use_container_width=True)
 
-  
+    with col2:
+        st.plotly_chart(bar_chart, use_container_width=True)
 
     
 
