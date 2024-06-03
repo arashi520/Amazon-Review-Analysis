@@ -12,18 +12,11 @@ def load_css(css_file):
     with open(css_file, "r") as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-def load_data(path):
-    data = pd.read_json(path)
-    # Convert date columns to datetime
-    data['datePostedString'] = pd.to_datetime(data['datePostedString'], errors='coerce')
-    data['dateSoldString'] = pd.to_datetime(data['dateSoldString'], errors='coerce')
-    return data
-
 def main():
     # Configure page settings
     st.set_page_config(
-        page_title="Amazon Beauty",
-        page_icon="🏠",
+        page_title="Amazon Analysis",
+        page_icon="🛍️",
         layout="wide"
     )
 
@@ -55,7 +48,7 @@ def main():
     # st.sidebar.markdown("# IMT 563")
 
     # Sidebar filters
-    st.sidebar.markdown("# Filters")
+    # st.sidebar.markdown("# Filters")
     
 
 

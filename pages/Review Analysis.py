@@ -4,6 +4,12 @@ import json
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
+
+def load_css(css_file):
+    """Load the CSS file"""
+    with open(css_file, "r") as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 # 读取JSONL文件
 def load_data(filepath):
     data = []
@@ -18,6 +24,13 @@ df = load_data(data_filepath)
 
 # 设置 Streamlit 页面标题
 st.title("Amazon Review Analysis")
+
+# Header
+st.markdown("""
+    <div class="header-container">
+        <header class="header-text">IMT 563 @ Amazon All Beauty Category Reviews 2023 Data Visualization</header>
+    </div>
+""", unsafe_allow_html=True)
 
 # 显示评分分布
 st.subheader("Review Ratings Distribution")
@@ -46,5 +59,6 @@ plt.figure(figsize=(10, 5))
 plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis("off")
 st.pyplot(plt)
+
 
 

@@ -4,6 +4,12 @@ import plotly.express as px
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
+
+def load_css(css_file):
+    """Load the CSS file"""
+    with open(css_file, "r") as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 @st.cache_data
 def load_data(path):
     data = pd.read_json('data/output_data_item.jsonl', lines=True, orient='records')
@@ -20,6 +26,17 @@ data = load_data('https://raw.githubusercontent.com/arashi520/Amazon-Review-Anal
 # filter the top ten stores with the most rating_number 
 data_cleaned = data[data['store'] != 'None']
 top_stores = data_cleaned['store'].value_counts().head(10)
+
+# 设置 Streamlit 页面标题
+st.title("Amazon Product Analysis")
+
+# Header
+st.markdown("""
+    <div class="header-container">
+        <header class="header-text">IMT 563 @ Amazon All Beauty Category Reviews 2023 Data Visualization</header>
+    </div>
+""", unsafe_allow_html=True)
+
 
 # Create a bar chart showing the number of ratings for the top ten stores
 st.write("### Top 10 Stores by Rating Number")
@@ -39,3 +56,6 @@ plt.imshow(wordcloud, interpolation='bilinear')
 plt.axis('off')
 st.write("### Word Cloud of Top 100 Titles by Rating Number")
 st.pyplot(plt)
+
+
+
